@@ -2,8 +2,8 @@
 
 ## Dataset:
 
-Table: sales
-Columns: product_id, customer_id,,product_category, sale_date, amount, quantity
+- Table: sales
+- Columns: product_id, customer_id,,product_category, sale_date, amount, quantity
 
 
 # 1.  Identify the most popular products in terms of sales quantity during a specific timeframe & Finding top N products sold within a specific dates:
