@@ -247,6 +247,136 @@ WHERE growth_rank=1
 - Those queries have errors. Please identify the errors and write the correct queries.
 - Here are some examples of queries with errors related to window functions:
 
-## 
+# Query 1
 
+## Orignal query
 
+```
+SELECT *, RANK() OVER (PARTITION BY customer_id) AS rank
+FROM sales
+ORDER BY rank DESC;
+```
+
+## Corrected query
+
+```
+SELECT
+
+    *,
+    SUM(amount) as total_amount,
+    DENSE_RANK() OVER (PARTITION BY customer_id order by total_amount DESC) AS rank
+
+FROM sales
+GROUP BY CUSTOMER_ID
+ORDER BY
+    customer_id, rank DESC;
+```
+
+## Explanation: 
+
+- The original query lacked an "ORDER BY" clause to properly operate the RANK() window function, potentially resulting in misleading rankings.
+  
+- Additionally, it used the RANK() function without considering potential ties in the ranking, which could lead to unexpected results.
+  
+- The corrected query addresses these issues by:
+    - Adding an "ORDER BY" clause to ensure proper operation of the ranking window function.
+    - Replacing RANK() with DENSE_RANK() to handle potential ties and ensure a consistent ranking.
+    - Grouping the data by customer_id to calculate the total amount for each customer.
+
+# Query 2
+
+## Orignal query
+
+```
+SELECT *, SUM(amount) OVER (ORDER BY sale_date) AS running_total
+FROM sales;
+```
+
+## Corrected query
+
+```
+SELECT
+
+    customer_id,
+    sale_date, 
+    sum(amount) as day_sales,
+    SUM(day_sales) OVER (PARTITION BY customer_id ORDER BY sale_date) AS running_total
+
+FROM sales
+GROUP BY
+    customer_id, sale_date
+ORDER BY
+    customer_id, sale_date
+```
+
+## Explanation: 
+
+- The original query attempted to calculate a running total of the "amount" column ordered by "sale_date" without properly partitioning by customer. This resulted in incorrect running totals across different customers.
+  
+- The corrected query first calculates the daily sales amount for each customer. Then, it computes the running total of sales for each customer by properly partitioning the data by customer_id and ordering by sale_date.
+
+- Finally, it groups the results by customer_id and sale_date, ensuring accurate computation of running totals for each customer over time.
+  
+# Query 3
+
+## Orignal query
+
+```
+SELECT *,AVG(amount) OVER (PARTITION BY customer_id) AS avg_amount,
+       COUNT(*) 
+FROM sales;
+```
+
+## Corrected query
+
+```
+SELECT DISTINCT
+
+    customer_id,
+    AVG(amount) OVER (PARTITION BY customer_id) AS avg_amount,
+    COUNT(*) OVER (PARTITION BY customer_id) AS customer_count
+    
+FROM sales;
+```
+
+## Explanation: 
+
+- The original query calculated the count the total number of rows but didn't partition by customer_id, resulting in a count across all customers.
+
+- The corrected query ensures partitioning the data by customer_id for both average amount calculation and customer count, providing insights into each customer's average amount and the number of transactions they made.
+
+# Query 4
+
+## Orignal query
+
+```
+SELECT 
+    *,
+    ROW_NUMBER() OVER (sale_date ORDER BY sale_date) AS row_num,
+    ROW_NUMBER() OVER (amount ORDER BY amount) AS another_row_num
+FROM sales;
+```
+
+## Corrected query: 
+
+```
+SELECT 
+    *,
+    DENSE_RANK() OVER (ORDER BY sale_date) AS row_num,
+    DENSE_RANK() OVER (ORDER BY amount) AS another_row_num
+FROM sales
+ORDER BY
+    row_num, another_row_num
+```
+
+## Explanation: 
+
+- The original query attempted to assign row numbers based on the values of "sale_date" and "amount" independently using the ROW_NUMBER() function.
+  
+- However, ROW_NUMBER() does not allow specifying the partitioning column explicitly, leading to incorrect results where row numbers restart for each distinct value of sale_date or amount.
+  
+- The corrected query addresses this issue by using the DENSE_RANK() function instead of ROW_NUMBER().
+  
+- By ordering the rows by sale_date and amount respectively, DENSE_RANK() assigns unique ranks to each row within each partition based on these criteria.
+  
+- Finally, the query orders the results by the assigned row numbers for clarity and consistency.
