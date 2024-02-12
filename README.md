@@ -124,7 +124,7 @@ ORDER BY customer_avg_per_region DESC;
 
 - Window Function Application: Employing a CTE, it partitions data by region, allowing accurate ranking of customers by their average order values, facilitating targeted analysis of high-spending customers within specific geographical areas.
 
-# 4. inding products with the biggest year-over-year sales growth:
+# 4. Finding products with the biggest year-over-year sales growth:
 ## Original Query
 ```
 SELECT product_id,amount, sale_date
@@ -165,45 +165,6 @@ ORDER BY
 
 - Window Function Utilization: Employing LAG() within a CTE, it captures previous year sales data, enabling precise calculation of year-over-year growth rates and pinpointing products experiencing notable increases in sales.
 
-## Solution 2: I calculated the products with the biggest year-over-year growth in sales for each year
-```
-WITH Yearly_Sales AS (
-    SELECT 
-        product_id,
-        EXTRACT(YEAR FROM sale_date) AS sale_year,
-        SUM(amount) AS total_sales,
-        LAG(SUM(amount)) OVER (PARTITION BY product_id ORDER BY sale_year) AS prev_year_sales
-        
-    FROM 
-        sales2
-    GROUP BY 
-        product_id, sale_year
-), 
-Yearly_Growth_with_ranking AS (
-    SELECT 
-        *,
-        ROUND(((total_sales - prev_year_sales) / prev_year_sales) * 100, 2) AS yoy_growth,
-        RANK() OVER (PARTITION BY sale_year ORDER BY yoy_growth DESC) AS year_rank
-
-    FROM Yearly_Sales
-    WHERE prev_year_sales IS NOT NULL
-    ORDER BY sale_year
-)
-SELECT   
-    product_id,
-    sale_year,
-    total_sales,
-    prev_year_sales,
-    yoy_growth
-FROM Yearly_Growth_with_ranking
-WHERE Year_rank=1
-```
-## Explanation 2:
-
-- Top Yearly Growth Identification: This solution determines products with the most significant year-over-year sales growth for each year by ranking the calculated growth rates within each year's data. It enables the precise identification of products experiencing the highest growth trends annually.
-
-- Ranking and Selection: Utilizing RANK() within a CTE, it ranks products based on their year-over-year growth rates, facilitating the extraction of products with the highest growth rates by selecting those with a rank of 1 for each respective year.
-
 ## Solution 3: I calculated the product with the biggest year-over-year growth sales.
 ```
 WITH Yearly_Sales AS (
@@ -237,11 +198,52 @@ SELECT
 FROM Yearly_Growth_with_ranking
 WHERE growth_rank=1
 ```
-## Explanation 3:
+## Explanation 2:
 
 - Max Year-over-Year Growth Product Identification: This solution identifies the product with the largest year-over-year sales growth by ranking all products based on their calculated growth rates. It offers a comprehensive approach to pinpointing the single product experiencing the most substantial growth in sales across all years analyzed.
 
 - Overall Growth Ranking: By employing RANK() without partitioning, the solution ranks products globally based on their year-over-year growth rates, ensuring that the product with the highest growth is selected regardless of the specific year.
+
+
+## Solution 3: I calculated the products with the biggest year-over-year growth in sales for each year
+```
+WITH Yearly_Sales AS (
+    SELECT 
+        product_id,
+        EXTRACT(YEAR FROM sale_date) AS sale_year,
+        SUM(amount) AS total_sales,
+        LAG(SUM(amount)) OVER (PARTITION BY product_id ORDER BY sale_year) AS prev_year_sales
+        
+    FROM 
+        sales2
+    GROUP BY 
+        product_id, sale_year
+), 
+Yearly_Growth_with_ranking AS (
+    SELECT 
+        *,
+        ROUND(((total_sales - prev_year_sales) / prev_year_sales) * 100, 2) AS yoy_growth,
+        RANK() OVER (PARTITION BY sale_year ORDER BY yoy_growth DESC) AS year_rank
+
+    FROM Yearly_Sales
+    WHERE prev_year_sales IS NOT NULL
+    ORDER BY sale_year
+)
+SELECT   
+    product_id,
+    sale_year,
+    total_sales,
+    prev_year_sales,
+    yoy_growth
+FROM Yearly_Growth_with_ranking
+WHERE Year_rank=1
+```
+## Explanation 3:
+
+- Top Yearly Growth Identification: This solution determines products with the most significant year-over-year sales growth for each year by ranking the calculated growth rates within each year's data. It enables the precise identification of products experiencing the highest growth trends annually.
+
+- Ranking and Selection: Utilizing RANK() within a CTE, it ranks products based on their year-over-year growth rates, facilitating the extraction of products with the highest growth rates by selecting those with a rank of 1 for each respective year.
+
 
 # Part 2 :
 - Those queries have errors. Please identify the errors and write the correct queries.
